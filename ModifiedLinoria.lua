@@ -1953,24 +1953,37 @@ do
     end;
 
     function Funcs:AddEspPreview(Idx, Info)
-        assert(Info.Text, 'AddInput: Missing `Text` string.')
-
         local Preview = {
-            Value = Info.Default or false;
-            Type = 'Toggle';
-
+            Value = Info.Default;
+            Min = Info.Min;
+            Max = Info.Max;
+            Rounding = Info.Rounding;
+            MaxSize = 232;
+            Type = 'Preview';
             Callback = Info.Callback or function(Value) end;
-            Addons = {},
-            Risky = Info.Risky,
         };
 
         local Groupbox = self;
         local Container = Groupbox.Container;
 
+        if not Info.Compact then
+            Library:CreateLabel({
+                Size = UDim2.new(1, 0, 0, 10);
+                TextSize = 14;
+                Text = Info.Text;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                TextYAlignment = Enum.TextYAlignment.Bottom;
+                ZIndex = 5;
+                Parent = Container;
+            });
+
+            Groupbox:AddBlank(3);
+        end
+
         local PreviewOuter = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(0, 0, 0);
             BorderColor3 = Color3.new(0, 0, 0);
-            Size = UDim2.new(0, 13, 0, 13);
+            Size = UDim2.new(1, -4, 0, 13);
             ZIndex = 5;
             Parent = Container;
         });
@@ -1993,50 +2006,69 @@ do
             BorderColor3 = 'OutlineColor';
         });
 
-        local PreviewLabel = Library:CreateLabel({
-            Size = UDim2.new(0, 216, 1, 0);
-            Position = UDim2.new(1, 6, 0, 0);
-            TextSize = 14;
-            Text = "shit";
-            TextXAlignment = Enum.TextXAlignment.Left;
-            ZIndex = 6;
+        local Fill = Library:Create('Frame', {
+            BackgroundColor3 = Library.AccentColor;
+            BorderColor3 = Library.AccentColorDark;
+            Size = UDim2.new(0, 0, 1, 0);
+            ZIndex = 7;
             Parent = PreviewInner;
         });
 
-        Library:Create('UIListLayout', {
-            Padding = UDim.new(0, 4);
-            FillDirection = Enum.FillDirection.Horizontal;
-            HorizontalAlignment = Enum.HorizontalAlignment.Right;
-            SortOrder = Enum.SortOrder.LayoutOrder;
-            Parent = PreviewLabel;
+        Library:AddToRegistry(Fill, {
+            BackgroundColor3 = 'AccentColor';
+            BorderColor3 = 'AccentColorDark';
         });
 
-        local PreviewRegion = Library:Create('Frame', {
-            BackgroundTransparency = 1;
-            Size = UDim2.new(0, 170, 1, 0);
+        local HideBorderRight = Library:Create('Frame', {
+            BackgroundColor3 = Library.AccentColor;
+            BorderSizePixel = 0;
+            Position = UDim2.new(1, 0, 0, 0);
+            Size = UDim2.new(0, 1, 1, 0);
             ZIndex = 8;
-            Parent = PreviewOuter;
+            Parent = Fill;
         });
 
-        Library:OnHighlight(PreviewRegion, PreviewOuter,
+        Library:AddToRegistry(HideBorderRight, {
+            BackgroundColor3 = 'AccentColor';
+        });
+
+        local DisplayLabel = Library:CreateLabel({
+            Size = UDim2.new(1, 0, 1, 0);
+            TextSize = 14;
+            Text = 'Infinite';
+            ZIndex = 9;
+            Parent = PreviewInner;
+        });
+
+        Library:OnHighlight(PreviewOuter, PreviewOuter,
             { BorderColor3 = 'AccentColor' },
             { BorderColor3 = 'Black' }
         );
 
-        function Preview:UpdateColors()
-            Preview:Display();
-        end;
-
         if type(Info.Tooltip) == 'string' then
-            Library:AddToolTip(Info.Tooltip, PreviewRegion)
+            Library:AddToolTip(Info.Tooltip, PreviewOuter)
         end
 
-        function Preview:Display()
-            Preview.BackgroundColor3 = Preview.Value and Library.AccentColor or Library.MainColor;
-            Preview.BorderColor3 = Preview.Value and Library.AccentColorDark or Library.OutlineColor;
+        function Preview:UpdateColors()
+            Fill.BackgroundColor3 = Library.AccentColor;
+            Fill.BorderColor3 = Library.AccentColorDark;
+        end;
 
-            Library.RegistryMap[PreviewInner].Properties.BackgroundColor3 = Preview.Value and 'AccentColor' or 'MainColor';
-            Library.RegistryMap[PreviewInner].Properties.BorderColor3 = Preview.Value and 'AccentColorDark' or 'OutlineColor';
+        function Preview:Display()
+            local Suffix = Info.Suffix or '';
+
+            if Info.Compact then
+                DisplayLabel.Text = Info.Text .. ': ' .. Preview.Value .. Suffix
+            elseif Info.HideMax then
+                DisplayLabel.Text = string.format('%s', Preview.Value .. Suffix)
+            else
+                DisplayLabel.Text = string.format('%s/%s', Preview.Value .. Suffix, Preview.Max .. Suffix);
+            end
+
+            local X = math.ceil(Library:MapValue(Preview.Value, Preview.Min, Preview.Max, 0, Preview.MaxSize));
+            Fill.Size = UDim2.new(0, X, 1, 0);
+
+            HideBorderRight.Visible = not (X == Preview.MaxSize or X == 0);
         end;
 
         function Preview:OnChanged(Func)
@@ -2044,48 +2076,68 @@ do
             Func(Preview.Value);
         end;
 
-        function Preview:SetValue(Bool)
-            Bool = (not not Bool);
+        local function Round(Value)
+            if Preview.Rounding == 0 then
+                return math.floor(Value);
+            end;
 
-            Preview.Value = Bool;
+
+            return tonumber(string.format('%.' .. Preview.Rounding .. 'f', Value))
+        end;
+
+        function Preview:GetValueFromXOffset(X)
+            return Round(Library:MapValue(X, 0, Preview.MaxSize, Preview.Min, Preview.Max));
+        end;
+
+        function Preview:SetValue(Str)
+            local Num = tonumber(Str);
+
+            if (not Num) then
+                return;
+            end;
+
+            Num = math.clamp(Num, Preview.Min, Preview.Max);
+
+            Preview.Value = Num;
             Preview:Display();
-
-            for _, Addon in next, Preview.Addons do
-                if Addon.Type == 'KeyPicker' and Addon.SyncToggleState then
-                    Addon.Toggled = Bool
-                    Addon:Update()
-                end
-            end
 
             Library:SafeCallback(Preview.Callback, Preview.Value);
             Library:SafeCallback(Preview.Changed, Preview.Value);
-            Library:UpdateDependencyBoxes();
         end;
 
-        PreviewRegion.InputBegan:Connect(function(Input)
+        PreviewInner.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
-                Preview:SetValue(not Preview.Value) -- Why was it not like this from the start?
+                local mPos = Mouse.X;
+                local gPos = Fill.Size.X.Offset;
+                local Diff = mPos - (Fill.AbsolutePosition.X + gPos);
+
+                while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+                    local nMPos = Mouse.X;
+                    local nX = math.clamp(gPos + (nMPos - mPos) + Diff, 0, Preview.MaxSize);
+
+                    local nValue = Preview:GetValueFromXOffset(nX);
+                    local OldValue = Preview.Value;
+                    Preview.Value = nValue;
+
+                    Preview:Display();
+
+                    if nValue ~= OldValue then
+                        Library:SafeCallback(Preview.Callback, Preview.Value);
+                        Library:SafeCallback(Preview.Changed, Preview.Value);
+                    end;
+
+                    RenderStepped:Wait();
+                end;
+
                 Library:AttemptSave();
             end;
         end);
 
-        if Preview.Risky then
-            Library:RemoveFromRegistry(PreviewLabel)
-            PreviewLabel.TextColor3 = Library.RiskColor
-            Library:AddToRegistry(PreviewLabel, { TextColor3 = 'RiskColor' })
-        end
-
         Preview:Display();
-        Groupbox:AddBlank(Info.BlankSize or 5 + 2);
+        Groupbox:AddBlank(Info.BlankSize or 6);
         Groupbox:Resize();
 
-        Preview.TextLabel = PreviewLabel;
-        Preview.Container = Container;
-        setmetatable(Preview, BaseAddons);
-
-        Toggles[Idx] = Preview;
-
-        Library:UpdateDependencyBoxes();
+        Options[Idx] = Preview;
 
         return Preview;
     end;
