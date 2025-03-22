@@ -1967,7 +1967,7 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        local ToggleOuter = Library:Create('Frame', {
+        local PreviewOuter = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(0, 0, 0);
             BorderColor3 = Color3.new(0, 0, 0);
             Size = UDim2.new(0, 13, 0, 13);
@@ -1975,32 +1975,32 @@ do
             Parent = Container;
         });
 
-        Library:AddToRegistry(ToggleOuter, {
+        Library:AddToRegistry(PreviewOuter, {
             BorderColor3 = 'Black';
         });
 
-        local ToggleInner = Library:Create('Frame', {
+        local PreviewInner = Library:Create('Frame', {
             BackgroundColor3 = Library.MainColor;
             BorderColor3 = Library.OutlineColor;
             BorderMode = Enum.BorderMode.Inset;
             Size = UDim2.new(1, 0, 1, 0);
             ZIndex = 6;
-            Parent = ToggleOuter;
+            Parent = PreviewOuter;
         });
 
-        Library:AddToRegistry(ToggleInner, {
+        Library:AddToRegistry(PreviewInner, {
             BackgroundColor3 = 'MainColor';
             BorderColor3 = 'OutlineColor';
         });
 
-        local ToggleLabel = Library:CreateLabel({
+        local PreviewLabel = Library:CreateLabel({
             Size = UDim2.new(0, 216, 1, 0);
             Position = UDim2.new(1, 6, 0, 0);
             TextSize = 14;
             Text = Info.Text;
             TextXAlignment = Enum.TextXAlignment.Left;
             ZIndex = 6;
-            Parent = ToggleInner;
+            Parent = PreviewInner;
         });
 
         Library:Create('UIListLayout', {
@@ -2008,57 +2008,57 @@ do
             FillDirection = Enum.FillDirection.Horizontal;
             HorizontalAlignment = Enum.HorizontalAlignment.Right;
             SortOrder = Enum.SortOrder.LayoutOrder;
-            Parent = ToggleLabel;
+            Parent = PreviewLabel;
         });
 
-        local ToggleRegion = Library:Create('Frame', {
+        local PreviewRegion = Library:Create('Frame', {
             BackgroundTransparency = 1;
             Size = UDim2.new(0, 170, 1, 0);
             ZIndex = 8;
-            Parent = ToggleOuter;
+            Parent = PreviewOuter;
         });
 
-        Library:OnHighlight(ToggleRegion, ToggleOuter,
+        Library:OnHighlight(PreviewRegion, PreviewOuter,
             { BorderColor3 = 'AccentColor' },
             { BorderColor3 = 'Black' }
         );
 
-        function Toggle:UpdateColors()
-            Toggle:Display();
+        function Preview:UpdateColors()
+            Preview:Display();
         end;
 
         if type(Info.Tooltip) == 'string' then
-            Library:AddToolTip(Info.Tooltip, ToggleRegion)
+            Library:AddToolTip(Info.Tooltip, PreviewRegion)
         end
 
-        function Toggle:Display()
-            ToggleInner.BackgroundColor3 = Toggle.Value and Library.AccentColor or Library.MainColor;
-            ToggleInner.BorderColor3 = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+        function Preview:Display()
+            Preview.BackgroundColor3 = Preview.Value and Library.AccentColor or Library.MainColor;
+            Preview.BorderColor3 = Preview.Value and Library.AccentColorDark or Library.OutlineColor;
 
-            Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
-            Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
+            Library.RegistryMap[PreviewInner].Properties.BackgroundColor3 = Preview.Value and 'AccentColor' or 'MainColor';
+            Library.RegistryMap[PreviewInner].Properties.BorderColor3 = Preview.Value and 'AccentColorDark' or 'OutlineColor';
         end;
 
-        function Toggle:OnChanged(Func)
-            Toggle.Changed = Func;
-            Func(Toggle.Value);
+        function Preview:OnChanged(Func)
+            Preview.Changed = Func;
+            Func(Preview.Value);
         end;
 
-        function Toggle:SetValue(Bool)
+        function Preview:SetValue(Bool)
             Bool = (not not Bool);
 
-            Toggle.Value = Bool;
-            Toggle:Display();
+            Preview.Value = Bool;
+            Preview:Display();
 
-            for _, Addon in next, Toggle.Addons do
+            for _, Addon in next, Preview.Addons do
                 if Addon.Type == 'KeyPicker' and Addon.SyncToggleState then
                     Addon.Toggled = Bool
                     Addon:Update()
                 end
             end
 
-            Library:SafeCallback(Toggle.Callback, Toggle.Value);
-            Library:SafeCallback(Toggle.Changed, Toggle.Value);
+            Library:SafeCallback(Preview.Callback, Preview.Value);
+            Library:SafeCallback(Preview.Changed, Preview.Value);
             Library:UpdateDependencyBoxes();
         end;
 
