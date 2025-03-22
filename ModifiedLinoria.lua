@@ -2062,32 +2062,32 @@ do
             Library:UpdateDependencyBoxes();
         end;
 
-        ToggleRegion.InputBegan:Connect(function(Input)
+        PreviewRegion.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
-                Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
+                Preview:SetValue(not Preview.Value) -- Why was it not like this from the start?
                 Library:AttemptSave();
             end;
         end);
 
-        if Toggle.Risky then
-            Library:RemoveFromRegistry(ToggleLabel)
-            ToggleLabel.TextColor3 = Library.RiskColor
-            Library:AddToRegistry(ToggleLabel, { TextColor3 = 'RiskColor' })
+        if Preview.Risky then
+            Library:RemoveFromRegistry(PreviewLabel)
+            PreviewLabel.TextColor3 = Library.RiskColor
+            Library:AddToRegistry(PreviewLabel, { TextColor3 = 'RiskColor' })
         end
 
-        Toggle:Display();
+        Preview:Display();
         Groupbox:AddBlank(Info.BlankSize or 5 + 2);
         Groupbox:Resize();
 
-        Toggle.TextLabel = ToggleLabel;
-        Toggle.Container = Container;
-        setmetatable(Toggle, BaseAddons);
+        Preview.TextLabel = PreviewLabel;
+        Preview.Container = Container;
+        setmetatable(Preview, BaseAddons);
 
-        Toggles[Idx] = Toggle;
+        Toggles[Idx] = Preview;
 
         Library:UpdateDependencyBoxes();
 
-        return Toggle;
+        return Preview;
     end;
 
     function Funcs:AddSlider(Idx, Info)
